@@ -1,0 +1,470 @@
+{
+  "info": {
+    "name": "videobelajar API",
+    "description": "Pengujian endpoint /course. Jalankan berurutan (Runner) dari request 1 sampai 7, lalu folder Kasus error.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. GET /course (semua kelas)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/course",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "course"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('success true & data berupa array', () => { pm.expect(j.success).to.eql(true); pm.expect(j.data).to.be.an('array'); });",
+              "if (j.data.length) pm.collectionVariables.set('courseId', j.data[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. GET /course?category=desain&search=antarmuka (filter)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/course?category=desain&search=antarmuka&page=1&limit=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "course"
+          ],
+          "query": [
+            {
+              "key": "category",
+              "value": "desain"
+            },
+            {
+              "key": "search",
+              "value": "antarmuka"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('semua hasil berkategori desain', () => pm.response.json().data.forEach(c => pm.expect(c.category_slug).to.eql('desain')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. GET /course/:id (satu kelas)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/course/{{courseId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "course",
+            "{{courseId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('id sesuai', () => pm.expect(String(pm.response.json().data.id)).to.eql(pm.collectionVariables.get('courseId')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. POST /course (tambah kelas)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/course",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "course"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": 5,\n  \"tutor_id\": 3,\n  \"title\": \"Dasar-dasar Figma untuk Pemula\",\n  \"headline\": \"UI/UX Design Fundamental\",\n  \"description\": \"Belajar Figma dari nol sampai bisa membuat prototipe.\",\n  \"thumbnail_url\": null,\n  \"price\": 275000,\n  \"duration_hours\": 5,\n  \"rating_avg\": 4.5,\n  \"is_published\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 201', () => pm.response.to.have.status(201));",
+              "const j = pm.response.json();",
+              "pm.test('data baru punya id', () => pm.expect(j.data.id).to.exist);",
+              "pm.collectionVariables.set('newCourseId', j.data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. PATCH /course/:id (ubah sebagian data)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/course/{{newCourseId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "course",
+            "{{newCourseId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"price\": 299000,\n  \"title\": \"Dasar-dasar Figma untuk Pemula (Revisi)\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('harga berubah', () => pm.expect(Number(pm.response.json().data.price)).to.eql(299000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. PUT /course/:id (alternatif PATCH)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/course/{{newCourseId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "course",
+            "{{newCourseId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"is_published\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. DELETE /course/:id (hapus kelas)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/course/{{newCourseId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "course",
+            "{{newCourseId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Kasus error",
+      "item": [
+        {
+          "name": "GET id yang sudah dihapus -> 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/course/{{newCourseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "course",
+                "{{newCourseId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET id bukan angka -> 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/course/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "course",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST tanpa field wajib -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/course",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "course"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Kelas tanpa data lengkap\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST dengan category_id tidak ada -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/course",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "course"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": 9999,\n  \"tutor_id\": 3,\n  \"title\": \"Dasar-dasar Figma untuk Pemula\",\n  \"headline\": \"UI/UX Design Fundamental\",\n  \"description\": \"Belajar Figma dari nol sampai bisa membuat prototipe.\",\n  \"thumbnail_url\": null,\n  \"price\": 275000,\n  \"duration_hours\": 5,\n  \"rating_avg\": 4.5,\n  \"is_published\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH body kosong -> 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/course/{{courseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "course",
+                "{{courseId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "courseId",
+      "value": "1"
+    },
+    {
+      "key": "newCourseId",
+      "value": "0"
+    }
+  ]
+}
