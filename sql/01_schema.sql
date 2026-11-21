@@ -3,10 +3,13 @@
 CREATE TABLE users (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   full_name VARCHAR(100) NOT NULL,
+  username VARCHAR(30) NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  phone_country_code VARCHAR(5) NOT NULL,
-  phone_number VARCHAR(15) NOT NULL,
+  is_verified BOOLEAN NOT NULL DEFAULT false,
+  verification_token VARCHAR(36) UNIQUE,
+  phone_country_code VARCHAR(5),
+  phone_number VARCHAR(15),
   photo_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

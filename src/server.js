@@ -1,6 +1,11 @@
 const pool = require("./config/db");
 const app = require("./app");
 
+if (!process.env.JWT_SECRET) {
+  console.error("JWT_SECRET belum diisi di file .env");
+  process.exit(1);
+}
+
 const PORT = Number(process.env.PORT) || 3000;
 
 (async () => {

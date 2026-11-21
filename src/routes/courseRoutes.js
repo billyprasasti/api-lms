@@ -23,8 +23,16 @@ function validate(data, full) {
   return errors;
 }
 
-// GET /course -> list semua kelas (?category=desain&search=react&page=1&limit=10)
+// GET /course -> list kelas. Query: topic, search, sortBy, order, min_price, max_price, page, limit
+//   contoh: /course?topic=desain&search=antarmuka&sortBy=price&order=asc
 router.get("/", wrap(async (req, res) => {
+  const { sortBy, order, min_price, max_price } = req.query;
+  if (sortBy !== undefined && !(sortBy in courseService.SORT_COLUMNS))
+    return res.status(400).json({ success: false, message: `sortBy harus salah satu dari: ${Object.keys(courseService.SORT_COLUMNS).join(", ")}.` });
+  if (order !== undefined && !["asc", "desc"].includes(String(order).toLowerCase()))
+    return res.status(400).json({ success: false, message: "order harus asc atau desc." });
+  if ([min_price, max_price].some((v) => v !== undefined && v !== "" && Number.isNaN(Number(v))))
+    return res.status(400).json({ success: false, message: "min_price dan max_price harus angka." });
   const data = await courseService.findAll(req.query);
   res.json({ success: true, count: data.length, data });
 }));

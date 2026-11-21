@@ -20,21 +20,49 @@ const BASE_SELECT = `
   JOIN categories ca ON ca.id = c.category_id
   JOIN tutors t      ON t.id  = c.tutor_id`;
 
-// SELECT * : semua kelas (opsional filter kategori, pencarian judul, dan pagination)
-async function findAll({ category, search, page = 1, limit = 50 } = {}) {
+// Langkah 5: pilihan kolom untuk SORT. Hanya nama di daftar ini yang diterima (mencegah SQL injection lewat ORDER BY).
+const SORT_COLUMNS = {
+  newest: "c.created_at",
+  title: "c.title",
+  price: "c.price",
+  rating: "c.rating_avg",
+  duration: "c.duration_hours",
+};
+
+// Karakter khusus LIKE (% dan _) di input user dibuat literal
+const escapeLike = (s) => String(s).replace(/[\\%_]/g, "\\$&");
+
+// SELECT * : semua kelas, dengan
+//  - FILTER : topic (slug kategori), min_price, max_price          -> WHERE
+//  - SEARCH : search (judul, sub-judul, atau nama tutor)           -> WHERE ... ILIKE (LIKE tanpa peduli besar/kecil)
+//  - SORT   : sortBy (title|price|rating|duration|newest) + order  -> ORDER BY
+//  - page, limit untuk pagination
+async function findAll({ topic, category, search, min_price, max_price, sortBy, order, page = 1, limit = 50 } = {}) {
   const where = [];
   const values = [];
-  if (category) { values.push(category); where.push(`ca.slug = $${values.length}`); }
-  if (search)   { values.push(`%${search}%`); where.push(`c.title ILIKE $${values.length}`); }
+  const add = (v) => { values.push(v); return `$${values.length}`; };
+
+  const slug = topic ?? category; // `category` dipertahankan agar permintaan lama tetap jalan
+  if (slug) where.push(`ca.slug = ${add(slug)}`);
+  if (min_price !== undefined && min_price !== "") where.push(`c.price >= ${add(Number(min_price))}`);
+  if (max_price !== undefined && max_price !== "") where.push(`c.price <= ${add(Number(max_price))}`);
+  if (search) {
+    const p = add(`%${escapeLike(search)}%`);
+    where.push(`(c.title ILIKE ${p} OR c.headline ILIKE ${p} OR t.full_name ILIKE ${p})`);
+  }
+
+  const column = SORT_COLUMNS[sortBy] ?? "c.id";
+  const direction = String(order).toLowerCase() === "asc" ? "ASC" : "DESC";
 
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const offset = (Math.max(Number(page) || 1, 1) - 1) * safeLimit;
-  values.push(safeLimit, offset);
+  const limitP = add(safeLimit);
+  const offsetP = add(offset);
 
   const sql = `${BASE_SELECT}
     ${where.length ? "WHERE " + where.join(" AND ") : ""}
-    ORDER BY c.id DESC
-    LIMIT $${values.length - 1} OFFSET $${values.length}`;
+    ORDER BY ${column} ${direction}, c.id DESC
+    LIMIT ${limitP} OFFSET ${offsetP}`;
   const { rows } = await pool.query(sql, values);
   return rows;
 }
@@ -77,4 +105,4 @@ async function remove(id) {
   return rowCount > 0;
 }
 
-module.exports = { WRITABLE, findAll, findById, create, update, remove };
+module.exports = { WRITABLE, SORT_COLUMNS, findAll, findById, create, update, remove };
